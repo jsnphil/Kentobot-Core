@@ -46,6 +46,16 @@ export class ApiStack extends cdk.Stack {
       }
     );
 
+    const eventsOutboxTableArn = cdk.Fn.importValue(
+      `events-outbox-table-arn-${props.environmentName}`
+    );
+
+    const eventsOutboxTable = ddb.Table.fromTableArn(
+      this,
+      `events-outbox-table-${props.environmentName}`,
+      eventsOutboxTableArn
+    );
+
     const webSocketApiId = cdk.Fn.importValue(
       `websocket-api-id-${props.environmentName}`
     );
@@ -232,7 +242,8 @@ export class ApiStack extends cdk.Stack {
         STREAM_DATA_TABLE: streamDataTable.tableName,
         WEBSOCKET_API_ID: webSocketApi.apiId,
         WEB_SOCKET_STAGE: webSocketApiStage,
-        EVENT_BUS_NAME: eventBus.bus.eventBusName
+        EVENT_BUS_NAME: eventBus.bus.eventBusName,
+        EVENTS_OUTBOX_TABLE: eventsOutboxTable.tableName
       },
       timeout: cdk.Duration.minutes(1),
       memorySize: 512,
@@ -247,6 +258,7 @@ export class ApiStack extends cdk.Stack {
     maxSongRequestsPerUser.grantRead(songRequestLambda);
     streamDataTable.grantReadWriteData(songRequestLambda);
     eventBus.bus.grantPutEventsTo(songRequestLambda);
+    eventsOutboxTable.grantWriteData(songRequestLambda);
 
     const requestSongEndpoint = queueEndpoint.addResource('request-song');
     requestSongEndpoint.addMethod(
