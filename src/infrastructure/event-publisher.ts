@@ -1,9 +1,10 @@
-/* eslint-disable no-console */
 import { Logger } from '@aws-lambda-powertools/logger';
 import { AttributeValue } from '@aws-sdk/client-dynamodb';
-import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
+import {
+  EventBridgeClient,
+  PutEventsCommand
+} from '@aws-sdk/client-eventbridge';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
-import { Attribute } from 'aws-cdk-lib/aws-dynamodb';
 import { DynamoDBStreamEvent, DynamoDBStreamHandler } from 'aws-lambda';
 
 const logger = new Logger({ serviceName: 'event-publisher' });
@@ -18,20 +19,33 @@ export const handler: DynamoDBStreamHandler = async (
   logger.logEventIfEnabled(event);
 
   for (const record of event.Records) {
-    const image = record.dynamodb?.NewImage;
-
-    if (image) {
-      const event = unmarshall(image as Record<string, AttributeValue>);
-
-      // Publish the event to EventBridge
+    if (record.eventName !== 'INSERT') {
+      continue;
     }
 
-    // // Handle new item inserted
-    // const newItem = record.dynamodb?.NewImage;
-    // // Handle item modified
-    // const updatedItem = record.dynamodb?.NewImage;
-    // // Handle item removed
-    // const removedItem = record.dynamodb?.OldImage;
-    // console.log('Item removed:', removedItem);
+    const image = record.dynamodb?.NewImage;
+
+    if (!image) {
+      continue;
+    }
+
+    const outboxItem = unmarshall(image as Record<string, AttributeValue>);
+
+    logger.debug(`Publishing event: ${outboxItem.type}`);
+
+    await eventBridgeClient.send(
+      new PutEventsCommand({
+        Entries: [
+          {
+            Source: outboxItem.source,
+            DetailType: outboxItem.type,
+            Detail: outboxItem.payload,
+            EventBusName: process.env.EVENT_BUS_NAME
+          }
+        ]
+      })
+    );
+
+    logger.debug(`Published event: ${outboxItem.type}`);
   }
 };

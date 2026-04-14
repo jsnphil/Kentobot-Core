@@ -2,10 +2,18 @@ import { WebSocketService } from '@services/web-socket-service';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { handler } from './stream-event-handler';
 import { StreamEvent } from '../../../types/event-types';
+import { StreamRepository } from '@repositories/stream-repository';
+import { Stream } from '@domains/stream/models/stream';
+import { SongQueue } from '@domains/stream/models/song-queue';
 import { vi, describe, expect, it, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@services/web-socket-service');
 vi.mock('@aws-lambda-powertools/logger');
+vi.mock('@repositories/stream-repository');
+vi.mock('@domains/stream/models/stream');
+vi.mock('@utils/utilities', () => ({
+  generateStreamDate: vi.fn().mockReturnValue('2026-04-05')
+}));
 
 describe('stream-event-handler', () => {
   let webSocketServiceMock;
@@ -34,27 +42,40 @@ describe('stream-event-handler', () => {
   });
 
   it('should broadcast a song-added message when detailType is song-added-to-queue', async () => {
-    const event = {
-      'detail-type': StreamEvent.SONG_ADDED_TO_QUEUE,
-      detail: {
-        songId: '1',
+    const mockSongs = [
+      {
+        id: '1',
         title: 'Test Song',
         requestedBy: 'User1',
-        status: 'queued',
-        duration: 300
+        duration: 300,
+        status: 'queued'
       }
+    ];
+    const mockQueue = {
+      getSongs: vi.fn().mockReturnValue(mockSongs)
+    } as unknown as SongQueue;
+    const mockStream = { getSongQueue: vi.fn().mockReturnValue(mockQueue) };
+
+    (StreamRepository.loadStream as any).mockResolvedValue({ id: 'stream123' });
+    (Stream.load as any).mockReturnValue(mockStream);
+
+    const event = {
+      'detail-type': StreamEvent.SONG_ADDED_TO_QUEUE,
+      detail: {}
     };
 
     const expectedMessage = JSON.stringify({
       event: 'song-added-to-queue',
       data: {
-        song: {
-          songId: '1',
-          title: 'Test Song',
-          requestedBy: 'User1',
-          duration: 300,
-          status: 'queued'
-        }
+        songQueue: [
+          {
+            songId: '1',
+            title: 'Test Song',
+            requestedBy: 'User1',
+            duration: 300,
+            status: 'queued'
+          }
+        ]
       }
     });
 

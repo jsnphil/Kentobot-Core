@@ -8,8 +8,8 @@ export type SongBumpedEventPayload = {
 };
 
 export type SongBumpedEvent = KentobotDomainEvent<SongBumpedEventPayload> & {
-  type: 'song-bumped';
+  type: 'song-bumped-in-queue';
   payload: SongBumpedEventPayload;
-  source: 'stream';
+  source: 'kentobot.streaming.system';
   version: 1;
 };

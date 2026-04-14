@@ -21,6 +21,13 @@ export class Stream {
   private beanBumpsAvailable: number;
   private channelPointBumpsAvailable: number;
   private songHistory: Song[]; // List of songs that have been played in the stream
+  private domainEvents: (
+    | SongAddedToQueueEvent
+    | SongRemovedFromQueueEvent
+    | SongMovedInQueueEvent
+    | SongBumpedEvent
+    | SongPlayedEvent
+  )[];
 
   private bumpService;
 
@@ -31,6 +38,7 @@ export class Stream {
     this.channelPointBumpsAvailable = 3;
     this.bumpService = new BumpService();
     this.songHistory = [];
+    this.domainEvents = [];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,11 +85,9 @@ export class Stream {
   public async addSongToQueue(song: Song) {
     this.songQueue.addSong(song);
 
-    // TODO Move this to the queue subdomain and pickup with an event dispatcher
-
     const event: SongAddedToQueueEvent = {
       type: 'song-added-to-queue',
-      source: 'song-queue',
+      source: 'kentobot.streaming.system',
       occurredAt: new Date().toISOString(),
       version: 1,
       payload: {
@@ -91,30 +97,32 @@ export class Stream {
         duration: song.duration
       }
     };
+
+    this.addDomainEvent(event);
   }
 
   public removeSongFromQueue(songId: string) {
     this.songQueue.removeSong(songId);
 
-    // TODO Move this to the queue subdomain and pickup with an event dispatcher
     const event: SongRemovedFromQueueEvent = {
       type: 'song-removed-from-queue',
-      source: 'song-queue',
+      source: 'kentobot.streaming.system',
       occurredAt: new Date().toISOString(),
       payload: {
         songId
       },
       version: 1
     };
+
+    this.addDomainEvent(event);
   }
 
   public moveSong(songId: string, newPosition: number) {
     this.songQueue.moveSong(songId, newPosition - 1);
 
-    // TODO Move this to the queue subdomain and pickup with an event dispatcher
     const event: SongMovedInQueueEvent = {
       type: 'song-moved-in-queue',
-      source: 'song-queue',
+      source: 'kentobot.streaming.system',
       occurredAt: new Date().toISOString(),
       payload: {
         songId,
@@ -122,6 +130,7 @@ export class Stream {
       },
       version: 1
     };
+    this.addDomainEvent(event);
   }
 
   public async bumpSongForUser(
@@ -153,12 +162,11 @@ export class Stream {
 
     this.decrementBumpCount(bumpType);
 
-    // TODO Move this to the queue subdomain and pickup with an event dispatcher
     // TODO Add a bump type to the payload
     const event: SongBumpedEvent = {
-      source: 'stream',
+      source: 'kentobot.streaming.system',
       occurredAt: new Date().toISOString(),
-      type: 'song-bumped',
+      type: 'song-bumped-in-queue',
       payload: {
         songId,
         bumpPosition,
@@ -166,6 +174,8 @@ export class Stream {
       },
       version: 1
     };
+
+    this.addDomainEvent(event);
   }
 
   bumpAvailable(bumpType: BumpType) {
@@ -211,7 +221,6 @@ export class Stream {
   public savePlayedSong(song: Song) {
     this.songHistory.push(song);
 
-    // TODO Move this to the queue subdomain and pickup with an event dispatcher
     const event: SongPlayedEvent = {
       payload: {
         songId: song.id,
@@ -220,11 +229,13 @@ export class Stream {
         duration: song.duration,
         playedAt: new Date().toISOString()
       },
-      source: 'stream',
+      source: 'kentobot.streaming.system',
       type: 'song-played',
       occurredAt: new Date().toISOString(),
       version: 1
     };
+
+    this.addDomainEvent(event);
   }
 
   public bumpShuffleWinner(shuffleWinner: string) {
@@ -237,11 +248,10 @@ export class Stream {
 
     this.songQueue.moveSong(song.id, 0);
 
-    // TODO Move this to the queue subdomain and pickup with an event dispatcher
     const event: SongBumpedEvent = {
-      source: 'stream',
+      source: 'kentobot.streaming.system',
       occurredAt: new Date().toISOString(),
-      type: 'song-bumped',
+      type: 'song-bumped-in-queue',
       payload: {
         songId: song.id,
         bumpPosition: 0,
@@ -249,5 +259,31 @@ export class Stream {
       },
       version: 1
     };
+    this.addDomainEvent(event);
+  }
+
+  public getDomainEvents(): ReadonlyArray<
+    | SongAddedToQueueEvent
+    | SongRemovedFromQueueEvent
+    | SongMovedInQueueEvent
+    | SongBumpedEvent
+    | SongPlayedEvent
+  > {
+    return [...this.domainEvents];
+  }
+
+  public clearDomainEvents(): void {
+    this.domainEvents = [];
+  }
+
+  private addDomainEvent(
+    event:
+      | SongAddedToQueueEvent
+      | SongRemovedFromQueueEvent
+      | SongMovedInQueueEvent
+      | SongBumpedEvent
+      | SongPlayedEvent
+  ): void {
+    this.domainEvents.push(event);
   }
 }

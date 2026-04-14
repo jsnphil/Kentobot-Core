@@ -10,6 +10,6 @@ export type SongPlayedEventPayload = {
 
 export type SongPlayedEvent = KentobotDomainEvent<SongPlayedEventPayload> & {
   type: 'song-played';
-  source: 'stream';
+  source: 'kentobot.streaming.system';
   version: 1;
 };

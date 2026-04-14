@@ -10,6 +10,7 @@ import { vi, describe, expect, it, beforeEach } from 'vitest';
 
 const mockEventBridgeClient = mockClient(EventBridgeClient);
 
+// TODO Add tests for event publishing when songs are added, removed, moved, or bumped
 describe('Stream', () => {
   beforeEach(() => {
     mockEventBridgeClient.on(PutEventsCommand).resolves({});
@@ -169,7 +170,9 @@ describe('Stream', () => {
       const streamDate = '2023-10-01';
       const stream = Stream.create(streamDate);
 
-      vi.spyOn(stream['bumpService'], 'isUserEligible').mockResolvedValue(false);
+      vi.spyOn(stream['bumpService'], 'isUserEligible').mockResolvedValue(
+        false
+      );
 
       await expect(
         stream.bumpSongForUser('user1', BumpType.Bean, undefined, false)

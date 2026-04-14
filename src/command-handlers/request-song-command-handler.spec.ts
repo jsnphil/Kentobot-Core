@@ -6,10 +6,13 @@ import { Stream } from '@domains/stream/models/stream';
 import { generateStreamDate } from '@utils/utilities';
 import { vi, describe, beforeEach, it, expect } from 'vitest';
 
+import { EventOutboxRepository } from '@repositories/event-outbox-repository';
+
 vi.mock('@repositories/stream-repository');
 vi.mock('@domains/stream/models/song');
 vi.mock('@domains/stream/models/stream');
 vi.mock('@utils/utilities');
+vi.mock('@repositories/event-outbox-repository');
 
 describe('RequestSongCommandHandler', () => {
   let handler: RequestSongCommandHandler;
@@ -30,7 +33,9 @@ describe('RequestSongCommandHandler', () => {
   it('should add a song to the stream queue and save the stream', async () => {
     const mockStreamData = { id: 'stream123' };
     const mockStream = {
-      addSongToQueue: vi.fn()
+      addSongToQueue: vi.fn(),
+      getDomainEvents: vi.fn().mockReturnValue([]),
+      clearDomainEvents: vi.fn()
     };
     const mockSong = { id: 'song123', requestedBy: 'user123' };
 
@@ -49,6 +54,7 @@ describe('RequestSongCommandHandler', () => {
     expect(Song.create).toHaveBeenCalledWith('Dalinar', 'song123');
     expect(mockStream.addSongToQueue).toHaveBeenCalledWith(mockSong);
     expect(StreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
+    expect(EventOutboxRepository.saveEvents).toHaveBeenCalledWith([]);
     expect(result).toBe(mockSong);
   });
 });

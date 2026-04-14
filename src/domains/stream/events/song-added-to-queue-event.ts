@@ -11,6 +11,6 @@ export type SongAddedToQueueEvent =
   KentobotDomainEvent<SongAddedToQueueEventPayload> & {
     type: 'song-added-to-queue';
     payload: SongAddedToQueueEventPayload;
-    source: 'song-queue';
+    source: 'kentobot.streaming.system';
     version: 1;
   };

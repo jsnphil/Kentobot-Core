@@ -1,5 +1,8 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import { WebSocketService } from '@services/web-socket-service';
+import { StreamRepository } from '@repositories/stream-repository';
+import { Stream } from '@domains/stream/models/stream';
+import { generateStreamDate } from '@utils/utilities';
 import { StreamEvent } from '../../../types/event-types';
 
 const webSocketService = new WebSocketService();
@@ -12,18 +15,27 @@ export const handler = async (event: any): Promise<void> => {
 
   let wssMessage;
   if (detailType === StreamEvent.SONG_ADDED_TO_QUEUE) {
-    const { songId, title, requestedBy, status, duration } = event.detail;
+    const streamDate = generateStreamDate();
+    const streamData = await StreamRepository.loadStream(streamDate);
+
+    if (!streamData) {
+      logger.warn('Stream not found when broadcasting queue update');
+      return;
+    }
+
+    const stream = Stream.load(streamData);
+    const songs = stream.getSongQueue().getSongs();
 
     wssMessage = {
       event: StreamEvent.SONG_ADDED_TO_QUEUE,
       data: {
-        song: {
-          songId,
-          title,
-          requestedBy,
-          duration,
-          status
-        }
+        songQueue: songs.map((song) => ({
+          songId: song.id,
+          title: song.title,
+          requestedBy: song.requestedBy,
+          duration: song.duration,
+          status: song.status
+        }))
       }
     };
   }

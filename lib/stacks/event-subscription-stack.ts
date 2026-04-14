@@ -259,7 +259,23 @@ export class EventSubscriptionStack extends cdk.Stack {
       timeToLiveAttribute: 'ttl'
     });
 
+    new cdk.CfnOutput(this, 'EventsOutboxTableArn', {
+      value: eventTable.tableArn,
+      exportName: `events-outbox-table-arn-${props.environmentName}`
+    });
+
+    new cdk.CfnOutput(this, 'EventsOutboxTableName', {
+      value: eventTable.tableName,
+      exportName: `events-outbox-table-name-${props.environmentName}`
+    });
+
     const eventStream = eventTable.tableStreamArn;
+
+    const apiEventBus = events.EventBus.fromEventBusName(
+      this,
+      'ApiEventBus',
+      `Kentobot-EventBus-${props.environmentName}`
+    );
 
     const eventPublisherLambda = new nodeLambda.NodejsFunction(
       this,
@@ -278,7 +294,8 @@ export class EventSubscriptionStack extends cdk.Stack {
         },
         logRetention: logs.RetentionDays.ONE_WEEK,
         environment: {
-          ...lambdaEnvironment
+          ...lambdaEnvironment,
+          EVENT_BUS_NAME: apiEventBus.eventBusName
         },
         timeout: cdk.Duration.seconds(30),
         memorySize: 2048,
@@ -287,6 +304,7 @@ export class EventSubscriptionStack extends cdk.Stack {
     );
 
     eventTable.grantStreamRead(eventPublisherLambda);
+    apiEventBus.grantPutEventsTo(eventPublisherLambda);
 
     eventPublisherLambda.addEventSourceMapping('EventOutboxStreamMapping', {
       eventSourceArn: eventStream,
