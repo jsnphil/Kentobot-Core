@@ -14,7 +14,6 @@ import { SongRemovedFromQueueEvent } from '../events/song-removed-from-queue-eve
 import { SongMovedInQueueEvent } from '../events/song-moved-in-queue-event';
 import { SongBumpedEvent } from '../events/song-bumped-event';
 import { SongPlayedEvent } from '../events/song-played-event';
-import { KentobotDomainEvent } from '@core/events/domain-event';
 
 export class Stream {
   private streamDate: string;
