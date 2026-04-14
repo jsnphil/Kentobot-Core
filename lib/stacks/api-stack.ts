@@ -242,7 +242,6 @@ export class ApiStack extends cdk.Stack {
         STREAM_DATA_TABLE: streamDataTable.tableName,
         WEBSOCKET_API_ID: webSocketApi.apiId,
         WEB_SOCKET_STAGE: webSocketApiStage,
-        EVENT_BUS_NAME: eventBus.bus.eventBusName,
         EVENTS_OUTBOX_TABLE: eventsOutboxTable.tableName
       },
       timeout: cdk.Duration.minutes(1),
@@ -257,7 +256,6 @@ export class ApiStack extends cdk.Stack {
     youtubeApiKeyParameter.grantRead(songRequestLambda);
     maxSongRequestsPerUser.grantRead(songRequestLambda);
     streamDataTable.grantReadWriteData(songRequestLambda);
-    eventBus.bus.grantPutEventsTo(songRequestLambda);
     eventsOutboxTable.grantWriteData(songRequestLambda);
 
     const requestSongEndpoint = queueEndpoint.addResource('request-song');
