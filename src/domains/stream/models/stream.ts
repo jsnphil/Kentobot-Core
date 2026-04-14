@@ -262,14 +262,14 @@ export class Stream {
     this.addDomainEvent(event);
   }
 
-  public getDomainEvents(): (
+  public getDomainEvents(): ReadonlyArray<
     | SongAddedToQueueEvent
     | SongRemovedFromQueueEvent
     | SongMovedInQueueEvent
     | SongBumpedEvent
     | SongPlayedEvent
-  )[] {
-    return this.domainEvents;
+  > {
+    return [...this.domainEvents];
   }
 
   public clearDomainEvents(): void {
