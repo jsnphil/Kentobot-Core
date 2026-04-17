@@ -1,5 +1,7 @@
 // import { EventPublisher } from '../../../common/event-publisher';
 // import { StreamEvent } from '../../../types/event-types';
+
+import { AggregateRoot } from '@core/aggregate-root';
 import { Song } from './song';
 import { SongQueue } from './song-queue';
 // import { SongMovedInQueueEvent } from '../events/song-moved-in-queue-event';
@@ -15,30 +17,23 @@ import { SongMovedInQueueEvent } from '../events/song-moved-in-queue-event';
 import { SongBumpedEvent } from '../events/song-bumped-event';
 import { SongPlayedEvent } from '../events/song-played-event';
 
-export class Stream {
+export class Stream extends AggregateRoot {
   private streamDate: string;
   private songQueue: SongQueue;
   private beanBumpsAvailable: number;
   private channelPointBumpsAvailable: number;
   private songHistory: Song[]; // List of songs that have been played in the stream
-  private domainEvents: (
-    | SongAddedToQueueEvent
-    | SongRemovedFromQueueEvent
-    | SongMovedInQueueEvent
-    | SongBumpedEvent
-    | SongPlayedEvent
-  )[];
 
   private bumpService;
 
   private constructor(streamDate: string, songQueue: SongQueue) {
+    super();
     this.streamDate = streamDate;
     this.songQueue = songQueue;
     this.beanBumpsAvailable = 3;
     this.channelPointBumpsAvailable = 3;
     this.bumpService = new BumpService();
     this.songHistory = [];
-    this.domainEvents = [];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,7 +157,6 @@ export class Stream {
 
     this.decrementBumpCount(bumpType);
 
-    // TODO Add a bump type to the payload
     const event: SongBumpedEvent = {
       source: 'kentobot.streaming.system',
       occurredAt: new Date().toISOString(),
@@ -260,30 +254,5 @@ export class Stream {
       version: 1
     };
     this.addDomainEvent(event);
-  }
-
-  public getDomainEvents(): ReadonlyArray<
-    | SongAddedToQueueEvent
-    | SongRemovedFromQueueEvent
-    | SongMovedInQueueEvent
-    | SongBumpedEvent
-    | SongPlayedEvent
-  > {
-    return [...this.domainEvents];
-  }
-
-  public clearDomainEvents(): void {
-    this.domainEvents = [];
-  }
-
-  private addDomainEvent(
-    event:
-      | SongAddedToQueueEvent
-      | SongRemovedFromQueueEvent
-      | SongMovedInQueueEvent
-      | SongBumpedEvent
-      | SongPlayedEvent
-  ): void {
-    this.domainEvents.push(event);
   }
 }

@@ -3,6 +3,9 @@ import { RemoveSongCommand } from '@commands/remove-song-command';
 import { RemoveSongCommandHandler } from '@command-handlers/remove-song-command-handler';
 import { Code } from 'better-status-codes';
 import { KentobotErrorCode } from '../types/types';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+
+const streamRepository = new DynamoDBStreamRepository();
 
 export const handler = async (
   event: APIGatewayEvent
@@ -22,7 +25,7 @@ export const handler = async (
       };
     }
 
-    const commandHandler = new RemoveSongCommandHandler();
+    const commandHandler = new RemoveSongCommandHandler(streamRepository);
     const command = new RemoveSongCommand(songId);
 
     await commandHandler.execute(command);

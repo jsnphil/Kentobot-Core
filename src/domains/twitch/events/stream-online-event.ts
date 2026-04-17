@@ -1,4 +1,4 @@
-import { KentobotDomainEvent } from '@domains/domain-event';
+import { KentobotDomainEvent } from '@core/domain-event';
 
 export type StreamOnlineEventPayload = {
   startedAt: string;

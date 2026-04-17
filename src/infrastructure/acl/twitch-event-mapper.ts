@@ -1,4 +1,4 @@
-import { KentobotDomainEvent } from '@core/events/domain-event';
+import { KentobotDomainEvent } from '@core/domain-event';
 
 import { UserRedeemedChannelRewardEvent } from '@domains/twitch/events/user-redeemed-channel-reward';
 import { UserCheeredEvent } from '@domains/twitch/events/user-cheered-event';

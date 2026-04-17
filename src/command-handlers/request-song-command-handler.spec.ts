@@ -1,6 +1,6 @@
 import { RequestSongCommandHandler } from './request-song-command-handler';
 import { RequestSongCommand } from '@commands/request-song-command';
-import { StreamRepository } from '@repositories/stream-repository';
+import { StreamRepository } from '@domains/stream/stream-repository';
 import { Song } from '@domains/stream/models/song';
 import { Stream } from '@domains/stream/models/stream';
 import { generateStreamDate } from '@utils/utilities';
@@ -8,7 +8,6 @@ import { vi, describe, beforeEach, it, expect } from 'vitest';
 
 import { EventOutboxRepository } from '@repositories/event-outbox-repository';
 
-vi.mock('@repositories/stream-repository');
 vi.mock('@domains/stream/models/song');
 vi.mock('@domains/stream/models/stream');
 vi.mock('@utils/utilities');
@@ -16,14 +15,19 @@ vi.mock('@repositories/event-outbox-repository');
 
 describe('RequestSongCommandHandler', () => {
   let handler: RequestSongCommandHandler;
+  let mockStreamRepository: StreamRepository;
 
   beforeEach(() => {
-    handler = new RequestSongCommandHandler();
+    mockStreamRepository = {
+      loadStream: vi.fn(),
+      saveStream: vi.fn()
+    };
+    handler = new RequestSongCommandHandler(mockStreamRepository);
   });
 
   it('should throw an error if the stream is not found', async () => {
     (generateStreamDate as any).mockReturnValue('2023-01-01');
-    (StreamRepository.loadStream as any).mockResolvedValue(null);
+    (mockStreamRepository.loadStream as any).mockResolvedValue(null);
 
     const command = new RequestSongCommand('Syl', 'song123');
 
@@ -40,7 +44,7 @@ describe('RequestSongCommandHandler', () => {
     const mockSong = { id: 'song123', requestedBy: 'user123' };
 
     (generateStreamDate as any).mockReturnValue('2023-01-01');
-    (StreamRepository.loadStream as any).mockResolvedValue(mockStreamData);
+    (mockStreamRepository.loadStream as any).mockResolvedValue(mockStreamData);
     (Stream.load as any).mockReturnValue(mockStream);
     (Song.create as any).mockResolvedValue(mockSong);
 
@@ -48,12 +52,12 @@ describe('RequestSongCommandHandler', () => {
 
     const result = await handler.execute(command);
 
-    expect(generateStreamDate).toHaveBeenCalled();
-    expect(StreamRepository.loadStream).toHaveBeenCalledWith('2023-01-01');
+    expect(mockStreamRepository.loadStream).toHaveBeenCalledTimes(1);
+    expect(mockStreamRepository.loadStream).toHaveBeenCalledWith('2023-01-01');
     expect(Stream.load).toHaveBeenCalledWith(mockStreamData);
     expect(Song.create).toHaveBeenCalledWith('Dalinar', 'song123');
     expect(mockStream.addSongToQueue).toHaveBeenCalledWith(mockSong);
-    expect(StreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
+    expect(mockStreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
     expect(EventOutboxRepository.saveEvents).toHaveBeenCalledWith([]);
     expect(result).toBe(mockSong);
   });

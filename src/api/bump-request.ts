@@ -4,8 +4,12 @@ import { KentobotErrorCode } from '../types/types';
 import { Code } from 'better-status-codes';
 import { BumpSongCommandHandler } from '@command-handlers/bump-song-command-handler';
 import { BumpSongCommand } from '@commands/bump-song-command';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+import { StreamFactory } from '@domains/stream/factories/stream-factory';
 
 const logger = new Logger({ serviceName: 'bump-song-lambda' });
+const streamRepository = new DynamoDBStreamRepository();
+const streamFactory = new StreamFactory(streamRepository);
 
 export const handler = async (event: APIGatewayEvent) => {
   const body = JSON.parse(event.body || '{}');
@@ -23,7 +27,7 @@ export const handler = async (event: APIGatewayEvent) => {
   // Your logic here
   // For example, bump the song in the playlist
   try {
-    const commandHandler = new BumpSongCommandHandler();
+    const commandHandler = new BumpSongCommandHandler(streamFactory, streamRepository);
     const command = new BumpSongCommand(bumpType, user, position, modOverride);
 
     await commandHandler.execute(command);

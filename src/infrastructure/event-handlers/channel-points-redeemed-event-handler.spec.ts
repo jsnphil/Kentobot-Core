@@ -5,7 +5,7 @@ import { StreamFactory } from '@domains/stream/factories/stream-factory';
 import { UserRedeemedChannelRewardEvent } from '@domains/twitch/events/user-redeemed-channel-reward';
 import { BumpType } from '../../types/song-request';
 import { handler } from './channel-points-redeemed-event-handler';
-import { beforeEach, describe, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@domains/stream/factories/stream-factory');
 vi.mock('@repositories/stream-repository');
@@ -19,7 +19,7 @@ describe('Channel Points Redeemed Event Handler', () => {
     const mockStream = {
       bumpSongForUser: vi.fn().mockResolvedValue(undefined)
     };
-    (StreamFactory.createStream as any).mockResolvedValue(mockStream);
+    (StreamFactory.prototype.createStream as any).mockResolvedValue(mockStream);
 
     bumpSongCommandHandlerSpy = vi.spyOn(
       BumpSongCommandHandler.prototype,

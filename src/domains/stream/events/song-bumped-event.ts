@@ -1,5 +1,5 @@
 import { BumpType } from '../../../types/song-request';
-import { KentobotDomainEvent } from '@core/events/domain-event';
+import { KentobotDomainEvent } from '@core/domain-event';
 
 export type SongBumpedEventPayload = {
   songId: string;

@@ -3,6 +3,8 @@ import { BumpSongCommandHandler } from '@command-handlers/bump-song-command-hand
 import { BumpSongCommand } from '@commands/bump-song-command';
 import { BumpType } from '../../types/song-request';
 import { UserRedeemedChannelRewardEvent } from '@domains/twitch/events/user-redeemed-channel-reward';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+import { StreamFactory } from '@domains/stream/factories/stream-factory';
 
 const logger = new Logger();
 
@@ -19,7 +21,9 @@ export const handler = async (
     return;
   }
 
-  const commandHandler = new BumpSongCommandHandler();
+  const streamRepository = new DynamoDBStreamRepository();
+  const streamFactory = new StreamFactory(streamRepository);
+  const commandHandler = new BumpSongCommandHandler(streamFactory, streamRepository);
   const command = new BumpSongCommand(BumpType.ChannelPoints, username);
   await commandHandler.execute(command);
 };

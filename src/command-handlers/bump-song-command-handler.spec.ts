@@ -1,18 +1,22 @@
 import { BumpSongCommandHandler } from './bump-song-command-handler';
 import { BumpSongCommand } from '@commands/bump-song-command';
 import { StreamFactory } from '@domains/stream/factories/stream-factory';
-import { StreamRepository } from '@repositories/stream-repository';
+import { StreamRepository } from '@domains/stream/stream-repository';
 import { BumpType } from '../types/song-request';
 import { vi, describe, expect, it, beforeEach, afterEach } from 'vitest';
 
-vi.mock('@domains/stream/factories/stream-factory');
-vi.mock('@repositories/stream-repository');
-
 describe('BumpSongCommandHandler', () => {
   let handler: BumpSongCommandHandler;
+  let mockStreamFactory: StreamFactory;
+  let mockStreamRepository: StreamRepository;
 
   beforeEach(() => {
-    handler = new BumpSongCommandHandler();
+    mockStreamRepository = {
+      loadStream: vi.fn(),
+      saveStream: vi.fn()
+    };
+    mockStreamFactory = { createStream: vi.fn() } as unknown as StreamFactory;
+    handler = new BumpSongCommandHandler(mockStreamFactory, mockStreamRepository);
   });
 
   afterEach(() => {
@@ -23,7 +27,7 @@ describe('BumpSongCommandHandler', () => {
     const mockStream = {
       bumpSongForUser: vi.fn().mockResolvedValue(undefined)
     };
-    (StreamFactory.createStream as any).mockResolvedValue(mockStream);
+    (mockStreamFactory.createStream as any).mockResolvedValue(mockStream);
 
     const command: BumpSongCommand = {
       requestedBy: 'Kaladin',
@@ -34,18 +38,18 @@ describe('BumpSongCommandHandler', () => {
 
     await handler.execute(command);
 
-    expect(StreamFactory.createStream).toHaveBeenCalled();
+    expect(mockStreamFactory.createStream).toHaveBeenCalled();
     expect(mockStream.bumpSongForUser).toHaveBeenCalledWith(
       command.requestedBy,
       command.bumpType,
       command.position,
       command.modOverride
     );
-    expect(StreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
+    expect(mockStreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
   });
 
   it('should throw an error if StreamFactory fails', async () => {
-    (StreamFactory.createStream as any).mockRejectedValue(
+    (mockStreamFactory.createStream as any).mockRejectedValue(
       new Error('Stream creation failed')
     );
 
@@ -59,15 +63,15 @@ describe('BumpSongCommandHandler', () => {
     await expect(handler.execute(command)).rejects.toThrow(
       'Stream creation failed'
     );
-    expect(StreamFactory.createStream).toHaveBeenCalled();
-    expect(StreamRepository.saveStream).not.toHaveBeenCalled();
+    expect(mockStreamFactory.createStream).toHaveBeenCalled();
+    expect(mockStreamRepository.saveStream).not.toHaveBeenCalled();
   });
 
   it('should throw an error if bumpSongForUser fails', async () => {
     const mockStream = {
       bumpSongForUser: vi.fn().mockRejectedValue(new Error('Bump song failed'))
     };
-    (StreamFactory.createStream as any).mockResolvedValue(mockStream);
+    (mockStreamFactory.createStream as any).mockResolvedValue(mockStream);
 
     const command: BumpSongCommand = {
       requestedBy: 'Kaladin',
@@ -83,15 +87,15 @@ describe('BumpSongCommandHandler', () => {
       command.position,
       command.modOverride
     );
-    expect(StreamRepository.saveStream).not.toHaveBeenCalled();
+    expect(mockStreamRepository.saveStream).not.toHaveBeenCalled();
   });
 
   it('should throw an error if StreamRepository.saveStream fails', async () => {
     const mockStream = {
       bumpSongForUser: vi.fn().mockResolvedValue(undefined)
     };
-    (StreamFactory.createStream as any).mockResolvedValue(mockStream);
-    (StreamRepository.saveStream as any).mockRejectedValue(
+    (mockStreamFactory.createStream as any).mockResolvedValue(mockStream);
+    (mockStreamRepository.saveStream as any).mockRejectedValue(
       new Error('Save stream failed')
     );
 
@@ -111,6 +115,7 @@ describe('BumpSongCommandHandler', () => {
       command.position,
       command.modOverride
     );
-    expect(StreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
+    expect(mockStreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
   });
 });
+

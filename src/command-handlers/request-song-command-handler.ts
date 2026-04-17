@@ -2,19 +2,19 @@ import { RequestSongCommand } from '@commands/request-song-command';
 
 import { Song } from '@domains/stream/models/song';
 import { generateStreamDate } from '@utils/utilities';
-import { StreamRepository } from '@repositories/stream-repository';
+import { StreamRepository } from '@domains/stream/stream-repository';
 import { Stream } from '@domains/stream/models/stream';
 import { EventOutboxRepository } from '@repositories/event-outbox-repository';
 
 export class RequestSongCommandHandler {
-  constructor() {}
+  constructor(private readonly streamRepository: StreamRepository) {}
 
   public async execute(command: RequestSongCommand): Promise<Song> {
     const { requestedBy, songId } = command;
 
     // Look up the stream. Use current date for now, but in the future, the UI and bot should be able to specify which stream to load
     const streamDate = generateStreamDate();
-    const streamData = await StreamRepository.loadStream(streamDate);
+    const streamData = await this.streamRepository.loadStream(streamDate);
 
     if (!streamData) {
       throw new Error('Stream not found');
@@ -29,13 +29,13 @@ export class RequestSongCommandHandler {
     await stream.addSongToQueue(song);
 
     // Persist the updated stream state back to the repository
-    await StreamRepository.saveStream(stream);
+    await this.streamRepository.saveStream(stream);
 
     // TODO Need to either invoke a WSS broadcast, or use an event to notify connected clients that the stream's queue has been updated
 
     const domainEvents = stream.getDomainEvents();
 
-    await EventOutboxRepository.saveEvents(domainEvents);
+    await EventOutboxRepository.saveEvents([...domainEvents]);
     // Here you would typically publish these domain events to an event bus or message broker
     // so that other parts of the system (e.g., WebSocket server) can react to the changes
     // For example:

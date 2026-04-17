@@ -1,6 +1,11 @@
 import { APIGatewayEvent } from 'aws-lambda';
 import { SavePlayedSongCommandHandler } from '@command-handlers/save-played-song-command-handler';
 import { SavePlayedSongCommand } from '@commands/save-played-song-command';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+import { StreamFactory } from '@domains/stream/factories/stream-factory';
+
+const streamRepository = new DynamoDBStreamRepository();
+const streamFactory = new StreamFactory(streamRepository);
 
 export const handler = async (event: APIGatewayEvent) => {
   // Parse the event to get the song details
@@ -26,7 +31,7 @@ export const handler = async (event: APIGatewayEvent) => {
     duration
   );
 
-  const commandHandler = new SavePlayedSongCommandHandler();
+  const commandHandler = new SavePlayedSongCommandHandler(streamFactory, streamRepository);
   await commandHandler.execute(savePlayedSongCommand);
 
   return {

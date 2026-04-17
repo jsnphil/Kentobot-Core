@@ -1,4 +1,3 @@
-import { StreamRepository } from '@repositories/stream-repository';
 import { Stream } from '@domains/stream/models/stream';
 import { GetQueueRequest } from '@queries/get-queue-request';
 import { SongRequestStatus } from '../types/song-request';
@@ -6,15 +5,16 @@ import { StreamFactory } from '@domains/stream/factories/stream-factory';
 import { GetQueueRequestHandler } from './get-queue-query-handler';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@repositories/stream-repository');
 vi.mock('../domains/stream/models/stream');
 vi.mock('@utils/utilities');
 
 describe('GetQueryRequestHandler', () => {
   let getQueueRequestHandler: GetQueueRequestHandler;
+  let mockStreamFactory: { createStream: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    getQueueRequestHandler = new GetQueueRequestHandler();
+    mockStreamFactory = { createStream: vi.fn() };
+    getQueueRequestHandler = new GetQueueRequestHandler(mockStreamFactory as unknown as StreamFactory);
   });
 
   it('should return the song queue when the stream exists', async () => {
@@ -38,11 +38,9 @@ describe('GetQueryRequestHandler', () => {
       ])
     };
 
-    const streamFactoryMock = vi
-      .spyOn(StreamFactory, 'createStream')
-      .mockResolvedValue({
-        getSongQueue: vi.fn().mockReturnValue(mockSongQueue)
-      } as unknown as Stream);
+    (mockStreamFactory.createStream as any).mockResolvedValue({
+      getSongQueue: vi.fn().mockReturnValue(mockSongQueue)
+    } as unknown as Stream);
 
     const songQueue = await getQueueRequestHandler.execute(
       new GetQueueRequest(mockStreamDate)
@@ -54,53 +52,8 @@ describe('GetQueryRequestHandler', () => {
     expect(songQueue.getSongs()[1].title).toEqual('Song 2');
   });
 
-  // it('should return the song queue', async () => {
-  //   const mockStreamDate = '2023-01-01';
-  //   const mockStreamData = {
-  //     id: 'stream1',
-  //     songQueue: {
-  //       songs: [
-  //         {
-  //           id: '1',
-  //           title: 'Song 1',
-  //           requestedBy: 'Vin',
-  //           duration: 300,
-  //           status: SongRequestStatus.QUEUED
-  //         },
-  //         {
-  //           id: '2',
-  //           title: 'Song 2',
-  //           requestedBy: 'Kelsier',
-  //           duration: 300,
-  //           status: SongRequestStatus.QUEUED
-  //         },
-  //         {
-  //           id: '3',
-  //           title: 'Song 3',
-  //           requestedBy: 'Elend',
-  //           duration: 300,
-  //           status: SongRequestStatus.QUEUED
-  //         }
-  //       ]
-  //     }
-  //   };
-
-  //   const streamFactoryMock = vi.spyOn(StreamFactory, 'createStream');
-
-  //   // (Stream.load as any).mockReturnValue(mockStream);
-
-  //   const songQueue = await getQueueRequestHandler.execute(
-  //     new GetQueueRequest('2023-10-01')
-  //   );
-
-  //   expect(songQueue).toBeDefined();
-  //   expect(songQueue.getSongs().length).toEqual(5);
-  // });
-
   it('should throw an error if the stream does not exist', async () => {
-    const event = { pathParameters: { streamDate: '2023-10-01' } };
-
-    vi.spyOn(StreamFactory, 'createStream').mockRejectedValue(
+    (mockStreamFactory.createStream as any).mockRejectedValue(
       new Error('Stream not found')
     );
 
@@ -109,3 +62,4 @@ describe('GetQueryRequestHandler', () => {
     ).rejects.toThrow('Stream not found');
   });
 });
+

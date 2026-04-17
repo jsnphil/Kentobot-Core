@@ -4,11 +4,14 @@ import { StartStreamCommandHandler } from '@command-handlers/start-stream-comman
 import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { Code } from 'better-status-codes';
 import { KentobotErrorCode } from '../types/types';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+
+const streamRepository = new DynamoDBStreamRepository();
 
 export const handler = async (
   event: APIGatewayEvent
 ): Promise<APIGatewayProxyResult> => {
-  const commandHandler = new StartStreamCommandHandler();
+  const commandHandler = new StartStreamCommandHandler(streamRepository);
 
   try {
     const streamDate = generateStreamDate();

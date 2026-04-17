@@ -1,9 +1,9 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import { WebSocketService } from '@services/web-socket-service';
-import { StreamRepository } from '@repositories/stream-repository';
 import { Stream } from '@domains/stream/models/stream';
 import { generateStreamDate } from '@utils/utilities';
 import { StreamEvent } from '../../../types/event-types';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
 
 const webSocketService = new WebSocketService();
 const logger = new Logger({ serviceName: 'add-song-to-queue-event-handler' });
@@ -15,8 +15,9 @@ export const handler = async (event: any): Promise<void> => {
 
   let wssMessage;
   if (detailType === StreamEvent.SONG_ADDED_TO_QUEUE) {
+    const streamRepository = new DynamoDBStreamRepository();
     const streamDate = generateStreamDate();
-    const streamData = await StreamRepository.loadStream(streamDate);
+    const streamData = await streamRepository.loadStream(streamDate);
 
     if (!streamData) {
       logger.warn('Stream not found when broadcasting queue update');

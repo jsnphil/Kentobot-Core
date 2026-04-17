@@ -1,12 +1,14 @@
 import { generateStreamDate } from '@utils/utilities';
 import { Stream } from '../models/stream';
-import { StreamRepository } from '../../../repositories/stream-repository';
+import { StreamRepository } from '../stream-repository';
 
 export class StreamFactory {
+  constructor(private readonly streamRepository: StreamRepository) {}
+
   // TODO Need to split this between create and load?
-  public static async createStream(): Promise<Stream> {
+  public async createStream(): Promise<Stream> {
     const streamDate = generateStreamDate();
-    const streamData = await StreamRepository.loadStream(streamDate);
+    const streamData = await this.streamRepository.loadStream(streamDate);
 
     if (!streamData) {
       throw new Error('Stream not found');
@@ -15,3 +17,4 @@ export class StreamFactory {
     return Stream.load(streamData);
   }
 }
+

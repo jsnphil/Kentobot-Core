@@ -21,7 +21,7 @@ describe('Subscription Event Handler', () => {
     const mockStream = {
       bumpSongForUser: vi.fn().mockResolvedValue(undefined)
     };
-    (StreamFactory.createStream as any).mockResolvedValue(mockStream);
+    (StreamFactory.prototype.createStream as any).mockResolvedValue(mockStream);
 
     bumpSongCommandHandlerSpy = vi.spyOn(
       BumpSongCommandHandler.prototype,

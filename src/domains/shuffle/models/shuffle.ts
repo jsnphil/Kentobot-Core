@@ -1,9 +1,10 @@
+import { AggregateRoot } from '@core/aggregate-root';
 import { ShuffleEntry } from './shuffle-entry';
 
 type User = string;
 type StreamId = string;
 
-export class Shuffle {
+export class Shuffle extends AggregateRoot {
   private readonly streamId: StreamId;
   private openedAt: Date;
   private durationMs: number = 60000;
@@ -15,6 +16,7 @@ export class Shuffle {
   private winnerCooldowns: Map<string, number> = new Map();
 
   constructor(streamId: StreamId, openedAt: Date) {
+    super();
     this.streamId = streamId;
     this.openedAt = openedAt;
     // this.previousWinners = previousWinners;

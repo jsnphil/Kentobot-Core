@@ -7,11 +7,16 @@ import { ShuffleCommandHandler } from '@command-handlers/shuffle-command-handler
 import { Command } from '@commands/command';
 import { EnterShuffleCommand } from '@commands/enter-shuffle-command';
 import { SelectWinnerCommand } from '@commands/shuffle/select-winner-command';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+import { StreamFactory } from '@domains/stream/factories/stream-factory';
+
+const streamRepository = new DynamoDBStreamRepository();
+const streamFactory = new StreamFactory(streamRepository);
 
 export const handler = async (event: APIGatewayEvent) => {
   const body = JSON.parse(event.body || '{}');
 
-  const commandHandler = new ShuffleCommandHandler();
+  const commandHandler = new ShuffleCommandHandler(streamFactory, streamRepository);
   let command: Command;
 
   if (event.path.endsWith('/toggle')) {

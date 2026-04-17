@@ -1,20 +1,25 @@
 import { SavePlayedSongCommandHandler } from './save-played-song-command-handler';
 import { SavePlayedSongCommand } from '@commands/save-played-song-command';
 import { StreamFactory } from '@domains/stream/factories/stream-factory';
-import { StreamRepository } from '@repositories/stream-repository';
+import { StreamRepository } from '@domains/stream/stream-repository';
 import { Song } from '@domains/stream/models/song';
 import { SongRequestStatus } from '../types/song-request';
 import { vi, describe, beforeEach, it, expect } from 'vitest';
 
-vi.mock('@domains/stream/factories/stream-factory');
-vi.mock('@repositories/stream-repository');
 vi.mock('@domains/stream/models/song');
 
 describe('SavePlayedSongCommandHandler', () => {
   let commandHandler: SavePlayedSongCommandHandler;
+  let mockStreamFactory: StreamFactory;
+  let mockStreamRepository: StreamRepository;
 
   beforeEach(() => {
-    commandHandler = new SavePlayedSongCommandHandler();
+    mockStreamRepository = {
+      loadStream: vi.fn(),
+      saveStream: vi.fn()
+    };
+    mockStreamFactory = { createStream: vi.fn() } as unknown as StreamFactory;
+    commandHandler = new SavePlayedSongCommandHandler(mockStreamFactory, mockStreamRepository);
     vi.clearAllMocks();
   });
 
@@ -29,7 +34,7 @@ describe('SavePlayedSongCommandHandler', () => {
       300
     );
 
-    (StreamFactory.createStream as any).mockResolvedValue(mockStream);
+    (mockStreamFactory.createStream as any).mockResolvedValue(mockStream);
     (Song.load as any).mockReturnValue({
       id: 'songId123',
       requestedBy: 'Kaladin',
@@ -49,7 +54,7 @@ describe('SavePlayedSongCommandHandler', () => {
         duration: 300
       })
     );
-    expect(StreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
+    expect(mockStreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
   });
 
   it('should throw an error if StreamFactory fails', async () => {
@@ -60,7 +65,7 @@ describe('SavePlayedSongCommandHandler', () => {
       300
     );
 
-    (StreamFactory.createStream as any).mockRejectedValue(
+    (mockStreamFactory.createStream as any).mockRejectedValue(
       new Error('Stream creation failed')
     );
 
@@ -68,9 +73,9 @@ describe('SavePlayedSongCommandHandler', () => {
       'Stream creation failed'
     );
 
-    expect(StreamFactory.createStream).toHaveBeenCalled();
+    expect(mockStreamFactory.createStream).toHaveBeenCalled();
     expect(Song.load).not.toHaveBeenCalled();
-    expect(StreamRepository.saveStream).not.toHaveBeenCalled();
+    expect(mockStreamRepository.saveStream).not.toHaveBeenCalled();
   });
 
   it('should throw an error if saving the stream fails', async () => {
@@ -84,7 +89,7 @@ describe('SavePlayedSongCommandHandler', () => {
       300
     );
 
-    (StreamFactory.createStream as any).mockResolvedValue(mockStream);
+    (mockStreamFactory.createStream as any).mockResolvedValue(mockStream);
     (Song.load as any).mockReturnValue({
       id: 'songId123',
       requestedBy: 'Shallan',
@@ -92,7 +97,7 @@ describe('SavePlayedSongCommandHandler', () => {
       status: SongRequestStatus.PLAYED,
       duration: 300
     });
-    (StreamRepository.saveStream as any).mockRejectedValue(
+    (mockStreamRepository.saveStream as any).mockRejectedValue(
       new Error('Failed to save stream')
     );
 
@@ -100,7 +105,7 @@ describe('SavePlayedSongCommandHandler', () => {
       'Failed to save stream'
     );
 
-    expect(StreamFactory.createStream).toHaveBeenCalled();
+    expect(mockStreamFactory.createStream).toHaveBeenCalled();
     expect(Song.load).toHaveBeenCalledWith(
       'songId123',
       'Shallan',
@@ -109,6 +114,7 @@ describe('SavePlayedSongCommandHandler', () => {
       300
     );
     expect(mockStream.savePlayedSong).toHaveBeenCalled();
-    expect(StreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
+    expect(mockStreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
   });
 });
+

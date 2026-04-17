@@ -1,6 +1,6 @@
 import { DynamoDB, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { Logger } from '@aws-lambda-powertools/logger';
-import { KentobotDomainEvent } from '@core/events/domain-event';
+import { KentobotDomainEvent } from '@core/domain-event';
 
 export class EventOutboxRepository {
   private static ddbClient = new DynamoDB({

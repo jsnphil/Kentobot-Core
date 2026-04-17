@@ -3,6 +3,9 @@ import { RequestSongCommandHandler } from '@command-handlers/request-song-comman
 import { RequestSongCommand } from '@commands/request-song-command';
 import { Code } from 'better-status-codes';
 import { KentobotErrorCode } from '../types/types';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+
+const streamRepository = new DynamoDBStreamRepository();
 
 export const handler = async (
   event: APIGatewayEvent
@@ -21,7 +24,7 @@ export const handler = async (
       };
     }
 
-    const commandHandler = new RequestSongCommandHandler();
+    const commandHandler = new RequestSongCommandHandler(streamRepository);
     const command = new RequestSongCommand(requestedBy, youtubeId);
 
     const song = await commandHandler.execute(command);

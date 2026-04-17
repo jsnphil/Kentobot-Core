@@ -5,6 +5,8 @@ import { BumpType } from '../../types/song-request';
 import { BumpSongCommand } from '@commands/bump-song-command';
 import { UserGiftedSubscriptionEvent } from '@domains/twitch/events/user-gifted-subscription-event';
 import { UserResubscriptionEvent } from '@domains/twitch/events/user-resubscribed-event';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+import { StreamFactory } from '@domains/stream/factories/stream-factory';
 
 const logger = new Logger();
 
@@ -40,7 +42,9 @@ export const handler = async (
     return;
   }
 
-  const commandHandler = new BumpSongCommandHandler();
+  const streamRepository = new DynamoDBStreamRepository();
+  const streamFactory = new StreamFactory(streamRepository);
+  const commandHandler = new BumpSongCommandHandler(streamFactory, streamRepository);
   const command = new BumpSongCommand(bumpType, username);
   await commandHandler.execute(command);
 };

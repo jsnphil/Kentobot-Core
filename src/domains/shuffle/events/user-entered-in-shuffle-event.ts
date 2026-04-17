@@ -1,4 +1,4 @@
-import { KentobotDomainEvent } from '../../../core/events/domain-event';
+import { KentobotDomainEvent } from '../../../core/domain-event';
 import { UserEnteredInShufflePayload } from './event-payload';
 
 export type UserEnteredInShuffleEvent =

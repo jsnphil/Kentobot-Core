@@ -6,13 +6,17 @@ import { Shuffle } from '@domains/shuffle/models/shuffle';
 import { StreamFactory } from '@domains/stream/factories/stream-factory';
 import { ShuffleRepository } from '@repositories/shuffle-repository';
 import { SelectWinnerCommand } from '@commands/shuffle/select-winner-command';
-import { StreamRepository } from '@repositories/stream-repository';
+import { StreamRepository } from '@domains/stream/stream-repository';
 
 export class ShuffleCommandHandler {
   private logger = new Logger({
     serviceName: 'shuffle-command-handler'
   });
-  constructor() {}
+
+  constructor(
+    private readonly streamFactory: StreamFactory,
+    private readonly streamRepository: StreamRepository
+  ) {}
 
   public async execute(command: Command): Promise<string | void> {
     if (command instanceof ToggleShuffleCommand) {
@@ -30,7 +34,7 @@ export class ShuffleCommandHandler {
     command: ToggleShuffleCommand
   ): Promise<void> {
     // TODO Throw an error if there is no stream
-    const stream = await StreamFactory.createStream();
+    const stream = await this.streamFactory.createStream();
     let shuffle = await ShuffleRepository.getShuffle(stream.getStreamDate());
 
     if (!shuffle) {
@@ -50,7 +54,7 @@ export class ShuffleCommandHandler {
     command: EnterShuffleCommand
   ): Promise<void> {
     // TODO Throw an error if there is no stream
-    const stream = await StreamFactory.createStream();
+    const stream = await this.streamFactory.createStream();
 
     const enterShuffleCommand = command as EnterShuffleCommand;
     const { user } = enterShuffleCommand;
@@ -75,7 +79,7 @@ export class ShuffleCommandHandler {
 
   private async selectShuffleWinner(): Promise<string> {
     // TODO Throw an error if there is no stream
-    const stream = await StreamFactory.createStream();
+    const stream = await this.streamFactory.createStream();
     const shuffle = await ShuffleRepository.getShuffle(stream.getStreamDate());
 
     if (!shuffle) {
@@ -92,7 +96,7 @@ export class ShuffleCommandHandler {
     stream.bumpShuffleWinner(winner.getUser());
 
     await ShuffleRepository.save(shuffle);
-    await StreamRepository.saveStream(stream);
+    await this.streamRepository.saveStream(stream);
 
     // TODO Trigger event to notify the stream about the winner
 

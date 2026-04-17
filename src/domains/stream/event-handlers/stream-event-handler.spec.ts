@@ -2,7 +2,7 @@ import { WebSocketService } from '@services/web-socket-service';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { handler } from './stream-event-handler';
 import { StreamEvent } from '../../../types/event-types';
-import { StreamRepository } from '@repositories/stream-repository';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
 import { Stream } from '@domains/stream/models/stream';
 import { SongQueue } from '@domains/stream/models/song-queue';
 import { vi, describe, expect, it, beforeEach, afterEach } from 'vitest';
@@ -56,7 +56,7 @@ describe('stream-event-handler', () => {
     } as unknown as SongQueue;
     const mockStream = { getSongQueue: vi.fn().mockReturnValue(mockQueue) };
 
-    (StreamRepository.loadStream as any).mockResolvedValue({ id: 'stream123' });
+    (DynamoDBStreamRepository.prototype.loadStream as any).mockResolvedValue({ id: 'stream123' });
     (Stream.load as any).mockReturnValue(mockStream);
 
     const event = {

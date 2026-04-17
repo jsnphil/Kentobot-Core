@@ -3,6 +3,9 @@ import { MoveSongCommandHandler } from '@command-handlers/move-song-command-hand
 import { MoveSongCommand } from '@commands/move-song-command';
 import { Code } from 'better-status-codes';
 import { apiLambdaWrapper } from '../infrastructure/lambda/api-lambda-wrapper';
+import { DynamoDBStreamRepository } from '@repositories/stream-repository';
+
+const streamRepository = new DynamoDBStreamRepository();
 
 export const handler = async (event: APIGatewayEvent) => {
   const songId = event.pathParameters?.songId;
@@ -20,7 +23,7 @@ export const handler = async (event: APIGatewayEvent) => {
     };
   }
 
-  const commandHandler = new MoveSongCommandHandler();
+  const commandHandler = new MoveSongCommandHandler(streamRepository);
   const command = new MoveSongCommand(songId, position);
 
   await commandHandler.execute(command);

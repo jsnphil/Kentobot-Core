@@ -4,20 +4,21 @@ import {
   PutItemCommand
 } from '@aws-sdk/client-dynamodb';
 import { Stream } from '@domains/stream/models/stream';
+import { StreamRepository } from '@domains/stream/stream-repository';
 
 import { Logger } from '@aws-lambda-powertools/logger';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 
-export class StreamRepository {
-  private static ddbClient = new DynamoDB({
+export class DynamoDBStreamRepository implements StreamRepository {
+  private readonly ddbClient = new DynamoDB({
     region: process.env.AWS_REGION
   });
 
-  private static readonly TABLE_NAME = process.env.STREAM_DATA_TABLE!;
+  private readonly TABLE_NAME = process.env.STREAM_DATA_TABLE!;
 
-  private static logger = new Logger({ serviceName: 'stream-repository' });
+  private readonly logger = new Logger({ serviceName: 'stream-repository' });
 
-  public static async loadStream(streamDate: string) {
+  public async loadStream(streamDate: string): Promise<Stream | null> {
     this.logger.info(`Loading stream for date: ${streamDate}`);
     const command = new GetItemCommand({
       TableName: this.TABLE_NAME,
@@ -32,21 +33,19 @@ export class StreamRepository {
     this.logger.info(`Item: ${JSON.stringify(Item)}`);
 
     if (!Item) {
-      return undefined;
-    } else {
-      const unmarshalledItem = unmarshall(Item);
-
-      return {
-        ...unmarshalledItem,
-        songQueue: JSON.parse(unmarshalledItem.songQueue),
-        songHistory: JSON.parse(unmarshalledItem.songHistory)
-      };
+      return null;
     }
+
+    const unmarshalledItem = unmarshall(Item);
+
+    return {
+      ...unmarshalledItem,
+      songQueue: JSON.parse(unmarshalledItem.songQueue),
+      songHistory: JSON.parse(unmarshalledItem.songHistory)
+    } as unknown as Stream;
   }
 
-  // Save a stream
-  // TODO Rename to just save
-  public static async saveStream(stream: Stream): Promise<void> {
+  public async saveStream(stream: Stream): Promise<void> {
     try {
       const command = new PutItemCommand({
         TableName: this.TABLE_NAME,

@@ -1,16 +1,20 @@
 import { RemoveSongCommandHandler } from './remove-song-command-handler';
-import { StreamRepository } from '@repositories/stream-repository';
+import { StreamRepository } from '@domains/stream/stream-repository';
 import { Stream } from '@domains/stream/models/stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@repositories/stream-repository');
 vi.mock('@domains/stream/models/stream');
 
 describe('RemoveSongCommandHandler', () => {
   let removeSongCommandHandler: RemoveSongCommandHandler;
+  let mockStreamRepository: StreamRepository;
 
   beforeEach(() => {
-    removeSongCommandHandler = new RemoveSongCommandHandler();
+    mockStreamRepository = {
+      loadStream: vi.fn(),
+      saveStream: vi.fn()
+    };
+    removeSongCommandHandler = new RemoveSongCommandHandler(mockStreamRepository);
   });
 
   afterEach(() => {
@@ -23,29 +27,29 @@ describe('RemoveSongCommandHandler', () => {
       removeSongFromQueue: vi.fn()
     };
 
-    (StreamRepository.loadStream as any).mockResolvedValue(mockStreamData);
+    (mockStreamRepository.loadStream as any).mockResolvedValue(mockStreamData);
     (Stream.load as any).mockReturnValue(mockStream);
-    (StreamRepository.saveStream as any).mockResolvedValue(undefined);
+    (mockStreamRepository.saveStream as any).mockResolvedValue(undefined);
 
     const result = await removeSongCommandHandler.execute({ songId: 'song1' });
 
-    expect(StreamRepository.loadStream).toHaveBeenCalled();
+    expect(mockStreamRepository.loadStream).toHaveBeenCalled();
     expect(Stream.load).toHaveBeenCalledWith(mockStreamData);
     expect(mockStream.removeSongFromQueue).toHaveBeenCalledWith('song1');
-    expect(StreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
+    expect(mockStreamRepository.saveStream).toHaveBeenCalledWith(mockStream);
     expect(result).toEqual({ songId: 'song1' });
   });
 
   it('should throw an error if the stream is not found', async () => {
-    (StreamRepository.loadStream as any).mockResolvedValue(null);
+    (mockStreamRepository.loadStream as any).mockResolvedValue(null);
 
     await expect(
       removeSongCommandHandler.execute({ songId: 'song1' })
     ).rejects.toThrow('Stream not found');
 
-    expect(StreamRepository.loadStream).toHaveBeenCalled();
+    expect(mockStreamRepository.loadStream).toHaveBeenCalled();
     expect(Stream.load).not.toHaveBeenCalled();
-    expect(StreamRepository.saveStream).not.toHaveBeenCalled();
+    expect(mockStreamRepository.saveStream).not.toHaveBeenCalled();
   });
 
   it('should throw an error if removing a song fails', async () => {
@@ -56,16 +60,16 @@ describe('RemoveSongCommandHandler', () => {
         .mockRejectedValue(new Error('Removal failed'))
     };
 
-    (StreamRepository.loadStream as any).mockResolvedValue(mockStreamData);
+    (mockStreamRepository.loadStream as any).mockResolvedValue(mockStreamData);
     (Stream.load as any).mockReturnValue(mockStream);
 
     await expect(
       removeSongCommandHandler.execute({ songId: 'song1' })
     ).rejects.toThrow('Removal failed');
 
-    expect(StreamRepository.loadStream).toHaveBeenCalled();
+    expect(mockStreamRepository.loadStream).toHaveBeenCalled();
     expect(Stream.load).toHaveBeenCalledWith(mockStreamData);
     expect(mockStream.removeSongFromQueue).toHaveBeenCalledWith('song1');
-    expect(StreamRepository.saveStream).not.toHaveBeenCalled();
+    expect(mockStreamRepository.saveStream).not.toHaveBeenCalled();
   });
 });
